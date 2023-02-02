@@ -1,0 +1,97 @@
+﻿WITH tag_sort AS (
+  SELECT
+    prospect_tag.prospect_id AS p_id_tags,
+    listagg(DISTINCT tag_name, ', ') AS all_tag_names,
+    --Finding the year
+    CASE
+      WHEN charindex('2022', all_tag_names) > 0
+      OR charindex('22', all_tag_names) > 0 THEN 2
+      WHEN charindex('2021', all_tag_names) > 0
+      OR charindex('21', all_tag_names) > 0 THEN 1
+      ELSE 0
+    END AS date_relevance,
+    --My attempt at standardizing the dates (yyyy-dd-mm)
+    CASE
+      WHEN right(rtrim(all_tag_names), 6) = '042222'
+      THEN '2022/22/04'
+      WHEN right(rtrim(all_tag_names), 6) = '220222'
+      THEN '2022/22/02'
+      WHEN right(rtrim(all_tag_names), 6) = '020222'
+      THEN '2022/02/02'
+      WHEN right(rtrim(all_tag_names), 6) = '040422'
+      THEN '2022/04/04'
+      WHEN right(rtrim(all_tag_names), 5) = '26422'
+      THEN '2022/26/04'
+      WHEN right(rtrim(all_tag_names), 6) = '021622'
+      THEN '2022/16/02'
+      WHEN right(rtrim(all_tag_names), 6) = '031822'
+      THEN '2022/18/03'
+      WHEN right(rtrim(all_tag_names), 6) = '020822'
+      THEN '2022/08/02'
+      WHEN right(rtrim(all_tag_names), 6) = '070322'
+      THEN '2022/07/03'
+      WHEN right(rtrim(all_tag_names), 6) = '012922'
+      THEN '2022/29/01'
+      WHEN right(rtrim(all_tag_names), 6) = '021122'
+      THEN '2022/11/02'
+      WHEN right(rtrim(all_tag_names), 6) = '012922'
+      THEN '2022/29/01'
+      WHEN right(rtrim(all_tag_names), 6) = '270422'
+      THEN '2022/27/04'
+      WHEN right(rtrim(all_tag_names), 8) = '03072022'
+      THEN '2022/07/03'
+      WHEN right(rtrim(all_tag_names), 8) = '02242022'
+      THEN '2022/24/02'
+      WHEN right(rtrim(all_tag_names), 8) = '04042022'
+      THEN '2022/04/04'
+      WHEN right(rtrim(all_tag_names), 8) = '03142022'
+      THEN '2022/14/03'
+      WHEN right(rtrim(all_tag_names), 8) = '04142022'
+      THEN '2022/14/04'
+      WHEN right(rtrim(all_tag_names), 8) = '03032022'
+      THEN '2022/03/03'
+      WHEN right(rtrim(all_tag_names), 8) = '01192022'
+      THEN '2022/19/01'
+      WHEN right(rtrim(all_tag_names), 8) = '01312022'
+      THEN '2022/31/01'
+      WHEN right(rtrim(all_tag_names), 8) = '19/04/22'
+      THEN '2022/19/04'
+      ELSE NULL
+    END AS standard_date,
+    
+    right(standard_date, 2) + date_relevance*12 AS overall_relevance,
+    
+    
+    CASE
+      WHEN left(ltrim(all_tag_names), 1) IN ('A', 'B', 'C', 'D','E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z')
+      THEN 'yes'
+      ELSE 'no'
+    END AS name_detected,
+    
+    CASE
+      WHEN charindex('-', all_tag_names) > 0
+      THEN 1
+      ELSE 0
+    END AS dash,
+    
+    CASE
+      WHEN name_detected = 'yes' AND dash = 0
+      THEN left(ltrim(all_tag_names), charindex(' ' , all_tag_names))
+      WHEN name_detected = 'yes' AND dash > 0
+      THEN left(ltrim(all_tag_names), charindex('-' , all_tag_names)-1)
+      ELSE 'N/A' 
+    END AS proper_name
+    
+    
+    
+  FROM
+    outreach.prospect_tag
+  GROUP BY
+    p_id_tags
+  --ORDER BY
+    --date_relevance DESC
+)
+SELECT
+  *
+FROM
+  tag_sort

@@ -1,0 +1,23 @@
+﻿WITH regression_table AS (
+  SELECT slope, ybarmax - xbarmax * slope AS intercept
+  FROM(
+    SELECT 
+      SUM ((x - xbar) * (y-ybar)) / SUM((x - xbar) * (x - xbar)) AS slope,
+      max(xbar) AS xbarmax,
+      max(ybar) AS ybarmax
+    FROM(
+      SELECT
+        abs(timestampdiff(HOUR, '001-01-01 00:00:00', reply_date) - timestampdiff(HOUR, '001-01-01 00:00:00', delivery_date)) AS x, 
+        AVG(x) OVER() AS xbar,
+        meetings_booked AS y,
+        AVG(y) OVER() AS ybar
+      FROM mozart.prospects_master
+    ) data1
+  ) data2
+)
+
+
+SELECT 
+  (SELECT slope FROM regression_table) AS slope, (SELECT intercept FROM regression_table) AS intercept,
+  (abs(timestampdiff(HOUR, '001-01-01 00:00:00', reply_date) - timestampdiff(HOUR, '001-01-01 00:00:00', delivery_date)) * (SELECT slope FROM regression_table) + (SELECT intercept FROM regression_table)) AS projected_meetings_scheduled
+FROM mozart.prospects_master WHERE timestampdiff(HOUR, '001-01-01 00:00:00', reply_date) > 0

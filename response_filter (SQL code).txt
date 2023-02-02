@@ -1,0 +1,37 @@
+﻿WITH newtable AS (
+  SELECT
+    owner_id,
+    p_id AS id,
+    first_name,
+    last_name,
+    responded,
+    timestampdiff(HOUR, '001-01-01 00:00:00', delivery_date) AS new_delivery_date,
+    timestampdiff(HOUR, '001-01-01 00:00:00', reply_date) AS new_reply_date,
+    ABS(new_reply_date - new_delivery_date) AS response_time_hours,
+    CASE
+      WHEN response_time_hours > 24 THEN ABS(
+        timestampdiff(DAY, '001-01-01 00:00:00', reply_date) - timestampdiff(DAY, '001-01-01 00:00:00', delivery_date)
+      )
+      ELSE 0
+    END AS response_time_days,
+    positive_responses,
+    meetings_booked,
+    CASE
+      WHEN meetings_booked = 1 THEN ABS(
+        timestampdiff(DAY, '001-01-01 00:00:00', meeting_booked_date) - timestampdiff(DAY, '001-01-01 00:00:00', reply_date)
+      )
+      ELSE NULL
+    END AS days_between_meeting_and_reply
+
+
+  FROM
+    mozart.prospects_master
+  WHERE
+    meetings_booked > 0
+  ORDER BY
+    id ASC
+)
+SELECT
+  *
+FROM
+  newtable
